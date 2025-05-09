@@ -4,6 +4,8 @@
 let video;
 let handPose;
 let hands = [];
+let rectX, rectY; // Rectangle position
+let rectSize = 100; // Rectangle size
 
 function preload() {
   // Initialize HandPose model with flipped video input
@@ -23,6 +25,10 @@ function setup() {
   video = createCapture(VIDEO, { flipped: true });
   video.hide();
 
+  // Initialize rectangle position at the center of the canvas
+  rectX = width / 2 - rectSize / 2;
+  rectY = height / 2 - rectSize / 2;
+
   // Start detecting hands
   handPose.detectStart(video, gotHands);
 }
@@ -30,11 +36,31 @@ function setup() {
 function draw() {
   image(video, 0, 0);
 
+  // Draw the rectangle
+  fill(0, 0, 255, 100); // Semi-transparent blue
+  noStroke();
+  rect(rectX, rectY, rectSize, rectSize);
+
   // Ensure at least one hand is detected
   if (hands.length > 0) {
     for (let hand of hands) {
       if (hand.confidence > 0.1) {
-        // Loop through keypoints and draw circles
+        // Get the position of the index finger (keypoint 8)
+        let indexFinger = hand.keypoints[8];
+
+        // Check if the index finger is touching the rectangle
+        if (
+          indexFinger.x > rectX &&
+          indexFinger.x < rectX + rectSize &&
+          indexFinger.y > rectY &&
+          indexFinger.y < rectY + rectSize
+        ) {
+          // Move the rectangle to follow the index finger
+          rectX = indexFinger.x - rectSize / 2;
+          rectY = indexFinger.y - rectSize / 2;
+        }
+
+        // Draw circles for all keypoints
         for (let i = 0; i < hand.keypoints.length; i++) {
           let keypoint = hand.keypoints[i];
 
