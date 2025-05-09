@@ -7,6 +7,8 @@ let hands = [];
 let circleX, circleY; // Circle position
 let circleRadius = 50; // Circle radius
 let isDragging = false; // Flag to check if the circle is being dragged
+let trail = []; // Array to store the trail of the circle's center (red trail for index finger)
+let thumbTrail = []; // Array to store the trail of the circle's center (green trail for thumb)
 
 function preload() {
   // Initialize HandPose model with flipped video input
@@ -37,6 +39,26 @@ function setup() {
 function draw() {
   image(video, 0, 0);
 
+  // Draw the red trail (index finger)
+  stroke(255, 0, 0); // Red color for the trail
+  strokeWeight(2);
+  noFill();
+  beginShape();
+  for (let pos of trail) {
+    vertex(pos.x, pos.y);
+  }
+  endShape();
+
+  // Draw the green trail (thumb)
+  stroke(0, 255, 0); // Green color for the trail
+  strokeWeight(2);
+  noFill();
+  beginShape();
+  for (let pos of thumbTrail) {
+    vertex(pos.x, pos.y);
+  }
+  endShape();
+
   // Draw the circle
   fill(0, 0, 255, 100); // Semi-transparent blue
   noStroke();
@@ -64,62 +86,33 @@ function draw() {
           // Move the circle to the midpoint between the index finger and thumb
           circleX = (indexFinger.x + thumb.x) / 2;
           circleY = (indexFinger.y + thumb.y) / 2;
+
+          // Add the current position to the red trail
+          trail.push({ x: circleX, y: circleY });
+        } else if (thumbDist <= circleRadius) {
+          // If only the thumb is touching, move the circle with the thumb
+          isDragging = true;
+
+          // Move the circle to the thumb's position
+          circleX = thumb.x;
+          circleY = thumb.y;
+
+          // Add the current position to the green trail
+          thumbTrail.push({ x: circleX, y: circleY });
         } else {
           // If fingers are not touching, stop dragging
           isDragging = false;
         }
-
-        // Draw circles for all keypoints
-        for (let i = 0; i < hand.keypoints.length; i++) {
-          let keypoint = hand.keypoints[i];
-
-          // Color-code based on left or right hand
-          if (hand.handedness == "Left") {
-            fill(255, 0, 255);
-          } else {
-            fill(255, 255, 0);
-          }
-
-          noStroke();
-          circle(keypoint.x, keypoint.y, 16);
-        }
-
-        // Draw lines connecting keypoints 0 to 4
-        for (let i = 0; i < 4; i++) {
-          let kp1 = hand.keypoints[i];
-          let kp2 = hand.keypoints[i + 1];
-          stroke(0, 255, 0);
-          strokeWeight(2);
-          line(kp1.x, kp1.y, kp2.x, kp2.y);
-        }
-
-        // Draw lines connecting keypoints 9 to 12
-        for (let i = 9; i < 12; i++) {
-          let kp1 = hand.keypoints[i];
-          let kp2 = hand.keypoints[i + 1];
-          stroke(0, 255, 0);
-          strokeWeight(2);
-          line(kp1.x, kp1.y, kp2.x, kp2.y);
-        }
-
-        // Draw lines connecting keypoints 13 to 16
-        for (let i = 13; i < 16; i++) {
-          let kp1 = hand.keypoints[i];
-          let kp2 = hand.keypoints[i + 1];
-          stroke(0, 255, 0);
-          strokeWeight(2);
-          line(kp1.x, kp1.y, kp2.x, kp2.y);
-        }
-
-        // Draw lines connecting keypoints 17 to 20
-        for (let i = 17; i < 20; i++) {
-          let kp1 = hand.keypoints[i];
-          let kp2 = hand.keypoints[i + 1];
-          stroke(0, 255, 0);
-          strokeWeight(2);
-          line(kp1.x, kp1.y, kp2.x, kp2.y);
-        }
       }
     }
+  } else {
+    // Clear the trails if no hands are detected
+    isDragging = false;
+  }
+
+  // Clear the trails when dragging stops
+  if (!isDragging) {
+    trail = [];
+    thumbTrail = [];
   }
 }
