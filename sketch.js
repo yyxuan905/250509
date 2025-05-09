@@ -4,8 +4,9 @@
 let video;
 let handPose;
 let hands = [];
-let rectX, rectY; // Rectangle position
-let rectSize = 100; // Rectangle size
+let circleX, circleY; // Circle position
+let circleRadius = 50; // Circle radius
+let isDragging = false; // Flag to check if the circle is being dragged
 
 function preload() {
   // Initialize HandPose model with flipped video input
@@ -25,9 +26,9 @@ function setup() {
   video = createCapture(VIDEO, { flipped: true });
   video.hide();
 
-  // Initialize rectangle position at the center of the canvas
-  rectX = width / 2 - rectSize / 2;
-  rectY = height / 2 - rectSize / 2;
+  // Initialize circle position at the center of the canvas
+  circleX = width / 2;
+  circleY = height / 2;
 
   // Start detecting hands
   handPose.detectStart(video, gotHands);
@@ -36,28 +37,36 @@ function setup() {
 function draw() {
   image(video, 0, 0);
 
-  // Draw the rectangle
+  // Draw the circle
   fill(0, 0, 255, 100); // Semi-transparent blue
   noStroke();
-  rect(rectX, rectY, rectSize, rectSize);
+  ellipse(circleX, circleY, circleRadius * 2);
 
   // Ensure at least one hand is detected
   if (hands.length > 0) {
     for (let hand of hands) {
       if (hand.confidence > 0.1) {
-        // Get the position of the index finger (keypoint 8)
+        // Get the positions of the index finger (keypoint 8) and thumb (keypoint 4)
         let indexFinger = hand.keypoints[8];
+        let thumb = hand.keypoints[4];
 
-        // Check if the index finger is touching the rectangle
+        // Check if both the index finger and thumb are touching the circle's edge
+        let indexDist = dist(indexFinger.x, indexFinger.y, circleX, circleY);
+        let thumbDist = dist(thumb.x, thumb.y, circleX, circleY);
+
         if (
-          indexFinger.x > rectX &&
-          indexFinger.x < rectX + rectSize &&
-          indexFinger.y > rectY &&
-          indexFinger.y < rectY + rectSize
+          indexDist <= circleRadius &&
+          thumbDist <= circleRadius
         ) {
-          // Move the rectangle to follow the index finger
-          rectX = indexFinger.x - rectSize / 2;
-          rectY = indexFinger.y - rectSize / 2;
+          // Set the dragging flag to true
+          isDragging = true;
+
+          // Move the circle to the midpoint between the index finger and thumb
+          circleX = (indexFinger.x + thumb.x) / 2;
+          circleY = (indexFinger.y + thumb.y) / 2;
+        } else {
+          // If fingers are not touching, stop dragging
+          isDragging = false;
         }
 
         // Draw circles for all keypoints
